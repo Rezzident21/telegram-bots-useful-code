@@ -1,0 +1,23 @@
+    def set_name(self):
+        rand_update_profile = random.randint(0, 3)
+        if rand_update_profile == 0:
+            self.client((UpdateProfileRequest(
+                first_name=names.get_first_name(),
+                last_name=names.get_last_name()
+            )))
+        elif rand_update_profile == 1:
+            self.client((UpdateProfileRequest(
+                first_name=random.choice(first_name)
+
+            )))
+        elif rand_update_profile == 2:
+            self.client((UpdateProfileRequest(
+                first_name=names.get_last_name()
+
+            )))
+        else:
+            self.client((UpdateProfileRequest(
+                first_name=names.get_first_name()
+            )))
+        print('Success update first and last name')
+        sleep(random.uniform(3, 4))
