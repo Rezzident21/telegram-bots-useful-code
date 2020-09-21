@@ -1,0 +1,56 @@
+import requests
+
+import proxyscrape
+import socks
+import urllib3
+import time
+from proxyscrape import create_collector, get_collector
+from time import sleep
+import csv
+import random
+
+collector = create_collector('my-collector', ['socks5'])
+from proxyscrape import get_resources
+from django.conf import settings as setting
+
+resources = get_resources()
+
+proxies = []
+
+
+def is_prox():
+    print('From socks5.csv ')
+    with open(setting.SOCKS5_URL_ROOT, "r") as f:
+        reader = csv.reader(f, delimiter="\t")
+        for i, line in enumerate(reader):
+            if i < 100:
+                proxies.append(line)
+    proxy = random.choice(proxies)[0].split(",")[0]
+    host = proxy.split(":")[:-1][0]
+    port = int(proxy.split(":")[1:][0])
+
+    print(host + ':' + proxy.split(":")[1:][0])
+
+    proxiesDict = {'http': "socks5://{}:{}".format(host, port),
+                   'https': "socks5://{}:{}".format(host, port)}
+
+    test_site = "https://www.google.com"
+    headers = {
+        'user-agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5 (.NET CLR 3.5.30729)'}
+    try:
+        r = requests.get(test_site, headers=headers, proxies=proxiesDict)
+        status = r.status_code
+
+        if status == 200:
+            proxy_arr = [host, port]
+            return proxy_arr
+    except Exception as e:
+        is_prox()
+
+
+def get_proxy():
+    print('Searching proxy...')
+    p = is_prox()
+    if p is None:
+        p = is_prox()
+    return p
