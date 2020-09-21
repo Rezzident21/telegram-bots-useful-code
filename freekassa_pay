@@ -1,0 +1,67 @@
+
+@method_decorator(login_required, name='dispatch')
+class Wallet(TemplateView):
+    template_name = 'billing/wallet.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        profile_user = Account.objects.get(user_id=self.request.user)
+
+        context['payments'] = profile_user.payments()
+        context['profile'] = profile_user
+        print(profile_user.payments())
+        context['last_payment'] = context['payments'].last()
+        return context
+
+
+@method_decorator(login_required, name='dispatch')
+class CreateInvoice(CreateView):
+    model = Payment
+    template_name = 'billing/create_invoice.html'
+    fields = ['amount']
+    widgets = {
+        'amount': forms.TextInput(attrs={'class': 'form-control'}),
+
+    }
+
+    def get_success_url(self):
+        form_class = self.get_form_class()
+        form = self.get_form(form_class)
+        if form.instance.payment_provider == 1:
+            print(form.instance.pk)
+            return freekassa_pay(form.instance.amount, form.instance.pk)
+
+    def form_valid(self, form):
+        form.instance.type = 1
+        profile_user = Account.objects.get(user_id=self.request.user)
+        amount = int(form.data['amount'])
+        if amount <= 0:
+            messages.warning(self.request, 'Введите правильну сумму пополнение')
+            return redirect('account_wallet')
+        form.instance.user = profile_user
+        form.instance.title = 'Пополнение'
+        form.instance.payment_provider = 1
+        return super(CreateInvoice, self).form_valid(form)
+
+
+@method_decorator(login_required, name='dispatch')
+class FreeKassaCallbackView(View):
+    def post(self, request, *args, **kwargs):
+        ip_array = list(
+            ('136.243.38.147', '136.243.38.149', '136.243.38.150', '136.243.38.151', '136.243.38.189',
+             '88.198.88.98'))
+        if request.META.get('REMOTE_ADDR') not in ip_array:
+            return Http404()
+        payment = Payment.objects.get(pk=int(request.POST.get("o")))
+        if float(request.POST.get('AMOUNT')) != payment.amount:
+            raise Http404
+
+        payment.confirm()
+
+
+def freekassa_pay(amount=None, order_id=None):
+    m = hashlib.md5()
+    m_str = '%s:%s:%s:%s' % (setting.FREEKASSA_MERCHANT_ID, amount, setting.FREEKASSA_KEY_1, order_id)
+    m.update(m_str.encode('utf-8'))
+    return 'http://www.free-kassa.ru/merchant/cash.php?m={merchant_id}&oa={price}&o={order_id}&s={hash}&lang=ru'. \
+        format(price=amount, merchant_id=setting.FREEKASSA_MERCHANT_ID, order_id=order_id, hash=m.hexdigest())
