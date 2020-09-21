@@ -1,0 +1,13 @@
+    def set_photo(self):
+        jpg_name = '%s.jpg' % (random.randint(1, 1000))
+        with open(jpg_name, 'wb') as f:
+            r = requests.get('https://picsum.photos/700/700/?random')
+            f.write(r.content)
+        try:
+            self.client(UploadProfilePhotoRequest(self.client.upload_file(jpg_name)))
+            print('Set photo'.format(jpg_name))
+
+        except:
+            self.set_photo()
+        os.remove(jpg_name)
+        sleep(random.uniform(5, 10))
