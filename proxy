@@ -49,7 +49,7 @@ def is_prox():
 
 
 def get_proxy():
-    print('Searching proxy...')
+    print('Searching proxy.')
     p = is_prox()
     if p is None:
         p = is_prox()
