@@ -15,7 +15,7 @@ from django.conf import settings as setting
 
 resources = get_resources()
 
-proxies = [         ]
+proxies = [          ]
 
 
 def is_prox():
